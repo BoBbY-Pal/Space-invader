@@ -25,7 +25,7 @@ public class ChallengeHandler : MonoBehaviour
         playFabId = PlayFabManager.Instance.playerFabID;
         acceptChallengeBtn.onClick.AddListener(AcceptChallengeRequest);
         declineChallengeBtn.onClick.AddListener(DeclineChallengeRequest);
-        DeleteChallenge();
+        // DeleteChallenge();
         
         // Start the polling coroutine
         StartCoroutine(PollForChallenge());
@@ -65,6 +65,7 @@ public class ChallengeHandler : MonoBehaviour
             isProcessingChallenge = true;
             var challenge = JsonUtility.FromJson<ChallengeData>(result.Data["Challenge"].Value);
             roomId = challenge.RoomID;
+            Debug.Log("Room ID: " + roomId);
             // Instantiate(challengePopUpPrefab, transform);
             challengePopUpPrefab.SetActive(true);
             // You've received a challenge! Handle it as needed.
