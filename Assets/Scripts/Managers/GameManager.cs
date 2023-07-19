@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public sealed class GameManager : MonoBehaviour
 {
-    private Player player;
+    private ShipPlayer player;
     private Invaders invaders;
     private MysteryShip mysteryShip;
     private Bunker[] bunkers;
@@ -18,7 +18,7 @@ public sealed class GameManager : MonoBehaviour
 
     private void Awake()
     {
-        this.player = FindObjectOfType<Player>();
+        this.player = FindObjectOfType<ShipPlayer>();
         this.invaders = FindObjectOfType<Invaders>();
         this.mysteryShip = FindObjectOfType<MysteryShip>();
         this.bunkers = FindObjectsOfType<Bunker>();

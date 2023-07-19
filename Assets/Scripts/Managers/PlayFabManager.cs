@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using PlayFab;
 using UnityEngine;
 using PlayFab.ClientModels;
@@ -10,11 +9,12 @@ using UnityEngine.UI;
 
 public class PlayFabManager : MonoBehaviour
 {
+    [SerializeField] private string _titleID;
     private SpriteRenderer _spriteRenderer;
 
     private Camera _camera;
 
-    public static PlayFabManager Instance;
+    // public static PlayFabManager Instance;
     public TMP_InputField loginUsernameField;
     public TMP_InputField loginPasswordField;
     
@@ -34,18 +34,20 @@ public class PlayFabManager : MonoBehaviour
     public string playerFabID;
     public string playerDisplayName;
     [SerializeField] private GameObject challengeHandler;
-
+    [SerializeField] private GameObject MainMenu;
+    private List<PlayerLeaderboardEntry> players;
+    public static Action<List<PlayerLeaderboardEntry>> OnPlayerListUpdated = delegate { };
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else if (Instance != this)
-        {
-            Destroy(gameObject);
-        }
+        // if (Instance == null)
+        // {
+        //     Instance = this;
+        //     DontDestroyOnLoad(gameObject);
+        // }
+        // else if (Instance != this)
+        // {
+        //     Destroy(gameObject);
+        // }
         
         // Make MainPanel visible, and hide the sign up, and game panels at the start
         ShowCanvasGroup(mainPanel);
@@ -75,18 +77,20 @@ public class PlayFabManager : MonoBehaviour
             // Activate login/register canvas and deactivate main canvas
             loginRegisterCanvas.gameObject.SetActive(true);
         }
+        players = new List<PlayerLeaderboardEntry>();
+        PhotonNetworkManager.GetPhotonPlayers += HandleGetPlayers;
+    }
+
+    private void OnDestroy()
+    {
+        PhotonNetworkManager.GetPhotonPlayers -= HandleGetPlayers;
     }
 
     void Start()
     {
-      
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyUp(KeyCode.Escape))
+        if (string.IsNullOrEmpty(PlayFabSettings.TitleId))
         {
-            CheckOnlinePlayers();
+            PlayFabSettings.TitleId = _titleID;
         }
     }
 
@@ -149,9 +153,9 @@ public class PlayFabManager : MonoBehaviour
             SetOnlineStatus(1);
             // SceneManager.LoadScene("Space Invaders");
             playerFabID = result.PlayFabId;
-            NetworkManager.Instance.OnLoginBtnClicked(username);
+            PhotonNetworkManager.Instance.OnLoginBtnClicked(username);
             loginPanel.gameObject.SetActive(false);
-            CheckOnlinePlayers();
+            MainMenu.SetActive(true);
         },
             errorCallback =>
         {
@@ -190,6 +194,7 @@ public class PlayFabManager : MonoBehaviour
             result =>
             {
                 Debug.Log($"Set display name was succeeded: {result.DisplayName}");
+                PlayerPrefs.SetString("USERNAME", playerDisplayName);
 
             },
             error =>
@@ -231,7 +236,12 @@ public class PlayFabManager : MonoBehaviour
         Debug.Log("Online status successfully updated");
     }
     
-    public void CheckOnlinePlayers()
+    private void HandleGetPlayers()
+    {
+        GetOnlinePlayers();
+    }
+    
+    public void GetOnlinePlayers()
     {
         // Define the parameters for the GetFriendLeaderboard request
         var request = new GetLeaderboardRequest
@@ -248,6 +258,8 @@ public class PlayFabManager : MonoBehaviour
     // Callback function for successful API call
     private void OnGetOnlinePlayers(GetLeaderboardResult result)
     {
+        Debug.Log($"Playfab get players list success: {result.Leaderboard.Count}");
+        
         // Iterate over the results to get online player information
         foreach (var player in result.Leaderboard)
         {
@@ -255,16 +267,18 @@ public class PlayFabManager : MonoBehaviour
             if (player.StatValue == 1)
             {
                 Debug.Log($"{player.DisplayName} is Online");
-                var entry = Instantiate(playerDisplayPrefab, transform);
-                entry.Setup(player);
+                players.Add(player);
+                // var entry = Instantiate(playerDisplayPrefab, layoutTransform);
+                // entry.Setup(player);
             }
             else
             {
                 Debug.Log($"{player.DisplayName} is Offline");
-            } 
+            }
         }
 
-        challengeHandler.SetActive(true);
+        OnPlayerListUpdated?.Invoke(result.Leaderboard);
+        // challengeHandler.SetActive(true);
     }
 
     // Callback function for API call failure

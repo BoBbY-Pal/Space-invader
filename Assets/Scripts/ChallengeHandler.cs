@@ -11,8 +11,8 @@ public class ChallengeHandler : MonoBehaviour
     // How often to check for challenges in seconds
     public float pollInterval = 1f;
 
-    private string playFabId; // Set this to your PlayFab ID
-    private string roomId; 
+    [SerializeField]private string playFabId; // Set this to your PlayFab ID
+    [SerializeField]private string roomId; 
     [SerializeField] private GameObject challengePopUpPrefab;
     [SerializeField] private Button acceptChallengeBtn;
     [SerializeField] private Button declineChallengeBtn;
@@ -22,7 +22,7 @@ public class ChallengeHandler : MonoBehaviour
 
     private void Start()
     {
-        playFabId = PlayFabManager.Instance.playerFabID;
+        // playFabId = PlayFabManager.Instance.playerFabID;
         acceptChallengeBtn.onClick.AddListener(AcceptChallengeRequest);
         declineChallengeBtn.onClick.AddListener(DeclineChallengeRequest);
         // DeleteChallenge();
@@ -33,7 +33,6 @@ public class ChallengeHandler : MonoBehaviour
 
     private IEnumerator PollForChallenge()
     {
-        yield return new WaitForSeconds(10f);
         while (true)
         {
             if (!isProcessingChallenge)

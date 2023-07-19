@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class ShipPlayer : MonoBehaviour
 {
     public float speed = 5.0f;
     public Projectile laserPrefab;

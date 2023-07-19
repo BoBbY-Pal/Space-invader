@@ -1,4 +1,3 @@
-using System;
 using PlayFab;
 using PlayFab.ClientModels;
 using TMPro;
@@ -10,10 +9,14 @@ public class PlayerDisplayEntry : MonoBehaviour
     [SerializeField] TMP_Text displayNameTxt;
     [SerializeField] Button inviteBtn;
     private string playfabID;
+    public PlayerLeaderboardEntry inviteePlayer;
+    private FriendInfo frnd;
+    
     public void Setup(PlayerLeaderboardEntry player)
     {
         displayNameTxt?.SetText($"{player.DisplayName}");
         playfabID = player.PlayFabId;
+        
     }
 
     private void Start()
@@ -23,7 +26,8 @@ public class PlayerDisplayEntry : MonoBehaviour
 
     private void ChallengePlayer()
     {
-        string roomID = NetworkManager.Instance.CreateRoom();
+        // string roomID = PhotonNetworkManager.Instance.CreateRoom();
+        string roomID = "";
         var request = new ExecuteCloudScriptRequest
         {
             FunctionName = "sendChallenge",
