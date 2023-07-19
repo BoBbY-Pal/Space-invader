@@ -149,9 +149,8 @@ public class PlayFabManager : MonoBehaviour
             result =>
         {
             Debug.Log("User logged in successfully");
-            SetPlayerDisplayName(username);
             SetOnlineStatus(1);
-            // SceneManager.LoadScene("Space Invaders");
+            SetPlayerDisplayName(username);
             playerFabID = result.PlayFabId;
             PhotonNetworkManager.Instance.OnLoginBtnClicked(username);
             loginPanel.gameObject.SetActive(false);
@@ -206,7 +205,7 @@ public class PlayFabManager : MonoBehaviour
     
     public void SetOnlineStatus(int status)
     {
-        // Status = 0 means offline, 1 means online.
+        
         if (!PlayFabClientAPI.IsClientLoggedIn())
         {
             Debug.LogError("User must be logged in to update score");
@@ -220,7 +219,7 @@ public class PlayFabManager : MonoBehaviour
                 new StatisticUpdate
                 {
                     StatisticName = "IsPlayerOnline",
-                    Value = status
+                    Value = status  // Status = 0 means offline, 1 means online.
                 }
             }
         };
@@ -247,7 +246,7 @@ public class PlayFabManager : MonoBehaviour
         var request = new GetLeaderboardRequest
         {
             StatisticName = "IsPlayerOnline",
-            MaxResultsCount = 100, // The maximum number of results you want to retrieve
+            MaxResultsCount = 10, // The maximum number of results you want to retrieve
         };
 
         // Call the GetFriendLeaderboard API
@@ -278,7 +277,6 @@ public class PlayFabManager : MonoBehaviour
         }
 
         OnPlayerListUpdated?.Invoke(result.Leaderboard);
-        // challengeHandler.SetActive(true);
     }
 
     // Callback function for API call failure

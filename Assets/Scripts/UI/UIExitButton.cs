@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 
-namespace KnoxGameStudios
-{
+
     public class UIExitButton : MonoBehaviour
     {
         public void ExitGame()
@@ -9,4 +8,3 @@ namespace KnoxGameStudios
             Application.Quit();
         }
     }
-}

@@ -7,65 +7,62 @@ using System;
 using System.Linq;
 using PlayFab.ClientModels;
 
-namespace KnoxGameStudios
+public class PhotonFriendController : MonoBehaviourPunCallbacks
 {
-    public class PhotonFriendController : MonoBehaviourPunCallbacks
+    [SerializeField] private float refreshCooldown;
+    [SerializeField] private float refreshCountdown;
+    [SerializeField] private List<PlayerLeaderboardEntry> friendList;
+    public static Action<List<PhotonFriendInfo>> OnDisplayFriends = delegate { };
+
+    private void Awake()
     {
-        [SerializeField] private float refreshCooldown;
-        [SerializeField] private float refreshCountdown;
-        [SerializeField] private List<PlayerLeaderboardEntry> friendList;
-        public static Action<List<PhotonFriendInfo>> OnDisplayFriends = delegate { };
+        friendList = new List<PlayerLeaderboardEntry>();
+        PlayFabManager.OnPlayerListUpdated += HandleFriendsUpdated;
+    }
 
-        private void Awake()
+    private void OnDestroy()
+    {
+        PlayFabManager.OnPlayerListUpdated -= HandleFriendsUpdated;
+    }
+
+    private void Update()
+    {
+        if (refreshCountdown > 0)
         {
-            friendList = new List<PlayerLeaderboardEntry>();
-            PlayFabManager.OnPlayerListUpdated += HandleFriendsUpdated;
+            refreshCountdown -= Time.deltaTime;
         }
-
-        private void OnDestroy()
+        else
         {
-            PlayFabManager.OnPlayerListUpdated -= HandleFriendsUpdated;
-        }
-
-        private void Update()
-        {
-            if (refreshCountdown > 0)
-            {
-                refreshCountdown -= Time.deltaTime;
-            }
-            else
-            {
-                refreshCountdown = refreshCooldown;
-                if (PhotonNetwork.InRoom) return;
-                FindPhotonFriends(friendList);
-            }
-        }
-
-        private void HandleFriendsUpdated(List<PlayerLeaderboardEntry> friends)
-        {
-            friendList = friends;
+            refreshCountdown = refreshCooldown;
+            if (PhotonNetwork.InRoom) return;
             FindPhotonFriends(friendList);
         }
+    }
 
-        private static void FindPhotonFriends(List<PlayerLeaderboardEntry> friends)
+    private void HandleFriendsUpdated(List<PlayerLeaderboardEntry> friends)
+    {
+        friendList = friends;
+        FindPhotonFriends(friendList);
+    }
+
+    private static void FindPhotonFriends(List<PlayerLeaderboardEntry> friends)
+    {
+        Debug.Log($"Handle getting Photon friends {friends.Count}");
+        if (friends.Count != 0)
         {
-            Debug.Log($"Handle getting Photon friends {friends.Count}");
-            if (friends.Count != 0)
-            {
-                string[] friendDisplayNames = friends.Select(f => f.DisplayName).ToArray();
-                PhotonNetwork.FindFriends(friendDisplayNames);
-            }
-            else
-            {
-                List<PhotonFriendInfo> friendList = new List<PhotonFriendInfo>();
-                OnDisplayFriends?.Invoke(friendList);
-            }
+            string[] friendDisplayNames = friends.Select(f => f.DisplayName).ToArray();
+            PhotonNetwork.FindFriends(friendDisplayNames);
         }
-
-        public override void OnFriendListUpdate(List<PhotonFriendInfo> friendList)
+        else
         {
-            Debug.Log($"Invoke UI to display Photon friends found: {friendList.Count}");
+            List<PhotonFriendInfo> friendList = new List<PhotonFriendInfo>();
             OnDisplayFriends?.Invoke(friendList);
         }
+    }
+
+    public override void OnFriendListUpdate(List<PhotonFriendInfo> friendList)
+    {
+        Debug.Log($"Invoke UI to display Photon friends found: {friendList.Count}");
+        OnDisplayFriends?.Invoke(friendList);
     }
 }

@@ -6,96 +6,96 @@ using System.Linq;
 using Photon.Chat;
 using PlayFab.ClientModels;
 
-namespace KnoxGameStudios
+
+public class PhotonChatPlayerController : MonoBehaviour
 {
-    public class PhotonChatPlayerController : MonoBehaviour
-    {        
-        [SerializeField] private bool initialized;
-        [SerializeField] private List<string> friendList;
-        private ChatClient chatClient;
-        public static Dictionary<string, PhotonStatus> friendStatuses;
-        
-        public static Action<List<string>> OnDisplayFriends = delegate { };
-        public static Action<PhotonStatus> OnStatusUpdated = delegate { };
+    [SerializeField] private bool initialized;
+    [SerializeField] private List<string> friendList;
+    private ChatClient chatClient;
+    public static Dictionary<string, PhotonStatus> friendStatuses;
 
-        private void Awake()
+    public static Action<List<string>> OnDisplayFriends = delegate { };
+    public static Action<PhotonStatus> OnStatusUpdated = delegate { };
+
+    private void Awake()
+    {
+        friendList = new List<string>();
+        friendStatuses = new Dictionary<string, PhotonStatus>();
+
+        PlayFabManager.OnPlayerListUpdated += HandleFriendsUpdated;
+        PhotonChatController.OnChatConnected += HandleChatConnected;
+        PhotonChatController.OnStatusUpdated += HandleStatusUpdated;
+        UIFriend.OnGetCurrentStatus += HandleGetCurrentStatus;
+    }
+
+    private void OnDestroy()
+    {
+        PlayFabManager.OnPlayerListUpdated -= HandleFriendsUpdated;
+        PhotonChatController.OnChatConnected -= HandleChatConnected;
+        PhotonChatController.OnStatusUpdated -= HandleStatusUpdated;
+        UIFriend.OnGetCurrentStatus -= HandleGetCurrentStatus;
+    }
+
+    private void HandleFriendsUpdated(List<PlayerLeaderboardEntry> friends)
+    {
+        friendList = friends.Select(f => f.DisplayName).ToList();
+        RemovePhotonFriends();
+        FindPhotonFriends();
+    }
+
+    private void HandleChatConnected(ChatClient client)
+    {
+        chatClient = client;
+        RemovePhotonFriends();
+        FindPhotonFriends();
+    }
+
+    private void HandleStatusUpdated(PhotonStatus status)
+    {
+        if (friendStatuses.ContainsKey(status.PlayerName))
         {
-            friendList = new List<string>();
-            friendStatuses = new Dictionary<string, PhotonStatus>();
-
-            PlayFabManager.OnPlayerListUpdated += HandleFriendsUpdated;
-            PhotonChatController.OnChatConnected += HandleChatConnected;
-            PhotonChatController.OnStatusUpdated += HandleStatusUpdated;
-            UIFriend.OnGetCurrentStatus += HandleGetCurrentStatus;
+            friendStatuses[status.PlayerName] = status;
         }
-
-        private void OnDestroy()
+        else
         {
-            PlayFabManager.OnPlayerListUpdated -= HandleFriendsUpdated;
-            PhotonChatController.OnChatConnected -= HandleChatConnected;
-            PhotonChatController.OnStatusUpdated -= HandleStatusUpdated;
-            UIFriend.OnGetCurrentStatus -= HandleGetCurrentStatus;
+            friendStatuses.Add(status.PlayerName, status);
         }
+    }
 
-        private void HandleFriendsUpdated(List<PlayerLeaderboardEntry> friends)
+    private void HandleGetCurrentStatus(string name)
+    {
+        PhotonStatus status;
+        if (friendStatuses.ContainsKey(name))
         {
-            friendList = friends.Select(f => f.DisplayName).ToList();
-            RemovePhotonFriends();
-            FindPhotonFriends();
+            status = friendStatuses[name];
         }
-
-        private void HandleChatConnected(ChatClient client)
+        else
         {
-            chatClient = client;
-            RemovePhotonFriends();
-            FindPhotonFriends();
+            status = new PhotonStatus(name, 0, "");
         }
 
-        private void HandleStatusUpdated(PhotonStatus status)
+        OnStatusUpdated?.Invoke(status);
+    }
+
+    private void RemovePhotonFriends()
+    {
+        if (friendList.Count > 0 && initialized)
         {
-            if(friendStatuses.ContainsKey(status.PlayerName))
-            {
-                friendStatuses[status.PlayerName] = status;
-            }
-            else
-            {
-                friendStatuses.Add(status.PlayerName, status);
-            }
+            string[] friendDisplayNames = friendList.ToArray();
+            chatClient.RemoveFriends(friendDisplayNames);
         }
+    }
 
-        private void HandleGetCurrentStatus(string name)
+    private void FindPhotonFriends()
+    {
+        if (chatClient == null) return;
+        if (friendList.Count != 0)
         {
-            PhotonStatus status;
-            if (friendStatuses.ContainsKey(name))
-            {
-                status = friendStatuses[name];
-            }
-            else
-            {
-                status = new PhotonStatus(name, 0, "");
-            }
-            OnStatusUpdated?.Invoke(status);
+            initialized = true;
+            string[] friendDisplayNames = friendList.ToArray();
+            chatClient.AddFriends(friendDisplayNames);
         }
 
-        private void RemovePhotonFriends()
-        {            
-            if(friendList.Count > 0 && initialized)
-            {
-                string[] friendDisplayNames = friendList.ToArray();
-                chatClient.RemoveFriends(friendDisplayNames);
-            }
-        }
-
-        private void FindPhotonFriends()
-        {
-            if (chatClient == null) return;
-            if (friendList.Count != 0)
-            {
-                initialized = true;
-                string[] friendDisplayNames = friendList.ToArray();                
-                chatClient.AddFriends(friendDisplayNames);                
-            }
-            OnDisplayFriends?.Invoke(friendList);
-        }
+        OnDisplayFriends?.Invoke(friendList);
     }
 }
